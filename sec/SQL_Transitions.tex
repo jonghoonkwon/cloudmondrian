@@ -1,0 +1,40 @@
+%finecolor{codegreen}{rgb}{0,0.6,0}
+%finecolor{codegray}{rgb}{0.5,0.5,0.5}
+%finecolor{codepurple}{rgb}{0.58,0,0.82}
+%finecolor{backcolour}{rgb}{0.95,0.95,0.92}
+%
+%tdefinestyle{mystyle}{
+% backgroundcolor=\color{backcolour},   
+% commentstyle=\color{codegreen},
+% keywordstyle=\color{magenta},
+% numberstyle=\tiny\color{codegray},
+% stringstyle=\color{codepurple},
+% basicstyle=\ttfamily\footnotesize,
+% breakatwhitespace=false,         
+% breaklines=true,                 
+% captionpos=b,                    
+% keepspaces=true,                 
+% numbers=left,                    
+% numbersep=5pt,                  
+% showspaces=false,                
+% showstringspaces=false,
+% showtabs=false,                  
+% tabsize=2,
+%morekeywords = {DISTINCT, WITH, REFERENCES, TEXT, AUTOINCREMENT},
+%otherkeywords = {IS}
+%
+%
+%tset{style=mystyle}
+
+\begin{lstlisting}[language=sql, breaklines=True, caption=Get Transitions Query, label=Get Transitions Query, sensitive=true]
+WITH relevant_zones 
+	AS (SELECT DISTINCT zone 
+		FROM   subnets 
+		WHERE  tp_address = ?) 
+SELECT policyID, src, dest, srcPort, destPort, proto, action
+	FROM   transitions 
+	WHERE  src IN relevant_zones 
+	   OR dest IN relevant_zones
+	   OR src IS NULL
+	   OR dest IS NULL
+\end{lstlisting}

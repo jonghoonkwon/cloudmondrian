@@ -1,0 +1,61 @@
+\chapter{MONDRIAN Controller Database}
+%\definecolor{codegreen}{rgb}{0,0.6,0}
+%\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+%\definecolor{codepurple}{rgb}{0.58,0,0.82}
+%\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+%
+%\lstdefinestyle{mystyle}{
+%    backgroundcolor=\color{backcolour},   
+%    commentstyle=\color{codegreen},
+%    keywordstyle=\color{magenta},
+%    numberstyle=\tiny\color{codegray},
+%    stringstyle=\color{codepurple},
+%    basicstyle=\ttfamily\footnotesize,
+%    breakatwhitespace=false,         
+%    breaklines=true,                 
+%    captionpos=b,                    
+%    keepspaces=true,                 
+%    numbers=left,                    
+%    numbersep=5pt,                  
+%    showspaces=false,                
+%    showstringspaces=false,
+%    showtabs=false,                  
+%    tabsize=2,
+%	otherkeywords = {DISTINCT, WITH, REFERENCES, TEXT, AUTOINCREMENT}
+%}
+%
+%\lstset{style=mystyle}
+
+\begin{lstlisting}[language=SQL, breaklines=True, caption=MONDRIAN Controller Database, label=MONDRIAN Controller Database, sensitive=true]
+CREATE TABLE zones (
+	id INTEGER NOT NULL,
+	name TEXT NOT NULL,
+	PRIMARY KEY(id)
+);
+CREATE TABLE sites (
+	tp_address TEXT NOT NULL,
+	name TEXT NOT NULL,
+	PRIMARY KEY(tp_address)
+);
+CREATE TABLE subnets(
+	net_ip BLOB NOT NULL,
+	net_mask BLOB NOT NULL,
+	zone INTEGER NOT NULL,
+	tp_address TEXT NOT NULL,
+	PRIMARY KEY (net_ip, net_mask),
+	FOREIGN KEY (zone) REFERENCES Zones(id) ON DELETE CASCADE,
+	FOREIGN KEY (tp_address) REFERENCES Sites(tp_address) ON DELETE CASCADE
+);	  
+CREATE TABLE transitions (
+	policyID	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	src INTEGER,
+	dest INTEGER,
+	srcPort INTEGER,
+	destPort INTEGER,
+	proto TEXT,
+	action TEXT NOT NULL,
+	FOREIGN KEY(src) REFERENCES Zones(id) ON DELETE CASCADE,
+	FOREIGN KEY(dest) REFERENCES Zones(id) ON DELETE CASCADE
+);
+\end{lstlisting}
+

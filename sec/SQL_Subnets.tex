@@ -1,0 +1,64 @@
+%\definecolor{codegreen}{rgb}{0,0.6,0}
+%\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+%\definecolor{codepurple}{rgb}{0.58,0,0.82}
+%\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+%
+%\lstdefinestyle{mystyle}{
+%    backgroundcolor=\color{backcolour},   
+%    commentstyle=\color{codegreen},
+%    keywordstyle=\color{magenta},
+%    numberstyle=\tiny\color{codegray},
+%    stringstyle=\color{codepurple},
+%    basicstyle=\ttfamily\footnotesize,
+%    breakatwhitespace=false,         
+%    breaklines=true,                 
+%    captionpos=b,                    
+%    keepspaces=true,                 
+%    numbers=left,                    
+%    numbersep=5pt,                  
+%    showspaces=false,                
+%    showstringspaces=false,
+%    showtabs=false,                  
+%    tabsize=2,
+%	morekeywords = {DISTINCT, WITH, REFERENCES, TEXT, AUTOINCREMENT},
+%	otherkeywords = {IS}
+%}
+%
+%\lstset{style=mystyle}
+
+\begin{lstlisting}[language=SQL, breaklines=True, caption=Get Subnets Query, label=Get Subnets Query, sensitive=true]
+WITH tp_zones
+	AS (SELECT DISTINCT zone 
+		FROM   subnets 
+		WHERE  tp_address = ?), 
+possible_dests 
+	AS (SELECT DISTINCT dest
+		FROM   transitions 
+		WHERE  (src IN tp_zones OR src = 0 OR src IS NULL) AND dest NOT IN tp_zones), 
+possible_src 
+	AS (SELECT DISTINCT src
+		FROM  transitions 
+		WHERE  (dest IN tp_zones OR dest = 0 OR dest IS NULL) AND src NOT IN tp_zones),
+dest_wildcard
+	AS (SELECT DISTINCT src
+		FROM transitions 
+		WHERE dest IS NULL OR dest = 0),
+src_wildcard
+	AS (SELECT DISTINCT dest
+		FROM transitions
+		WHERE src IS NULL OR src = 0), 
+wildcard_zone_count_src
+	AS(	SELECT DISTINCT count(dest) 
+		FROM src_wildcard
+		WHERE dest IN tp_zones),
+wildcard_zone_count_dest
+	AS(	SELECT DISTINCT count(src) 
+		FROM dest_wildcard
+		WHERE src IN tp_zones)
+SELECT net_ip, net_mask, zone, tp_address 
+	FROM   subnets 
+	WHERE  zone IN tp_zones OR zone IN possible_dests
+	   OR zone IN possible_src
+	   OR ((SELECT count(*) FROM tp_zones JOIN dest_wildcard WHERE zone = src) > 0)
+	   OR ((SELECT count(*) FROM tp_zones JOIN src_wildcard WHERE zone = dest) > 0)
+\end{lstlisting}

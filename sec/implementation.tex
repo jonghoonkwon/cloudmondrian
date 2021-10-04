@@ -1,0 +1,196 @@
+% \chapter{Implementation}
+This chapter provides detailed information about the implementation of the individual MONDRIAN components, as well as their modules.
+
+\subsection{MONDRIAN Controller}
+The MONDRIAN Controller is implemented in Go and is fairly similar to the MONDRIAN Controller of the original MONDRIAN design. The backend database is an SQLite database, with a structure defined in listing \ref{MONDRIAN Controller Database}. The connection to the controller is secured by using \acs{TLS} (\acl{TLS}). The certificates are previously distributed in our setup while in a production environment they would be obtained via a standard \acs{PKI}.
+
+Since the MONDRIAN Controller is implemented in Go, the code is structured into different packages, which we individually discuss below.
+
+\paragraph{main} This package is the entry-point of the MONDRIAN Controller. It binds the routes to the endpoints, which are documented in table \ref{MONDRIAN Controller API}. It then listens and serves on the predefined port.
+\paragraph{handler} The handler package contains the implementation of the different handlers, which handle the \acs{HTTP} (\acl{HTTP}) requests coming from a client (Admin, Gateway \acs{TP} or Endpoint \acs{TP}).
+\paragraph{db} This package is used to set up the database according to the schema shown in listing \ref{MONDRIAN Controller Database}. Furthermore, it provides the implementation of functions that interact with the database. Most queries and statements are quite straight forward. The two queries, which are a bit more complicated are at the same time also the most important ones, since they fetch site specific data from the database. The queries for getting the relevant subnets and zone transition policies are shown in listings \ref{Get Subnets Query} and \ref{Get Transitions Query} respectively.
+\paragraph{types} This package contains the type definitions for zones, sites, subnets and zone transition policies.
+\paragraph{api} The \texttt{api} package provides a Go \acs{API} for interacting with the database of the MONDRIAN Controller. This \acs{API} can be used by an administration frontend.
+
+%\begin{table*}[h]\centering
+%    \ra{1.3}
+%    \begin{tabular}{@{}p{.2\textwidth}p{.8\textwidth}@{}}\toprule
+%    \textbf{Package} & \textbf{Description} \\\midrule
+%    main & This package is the entry-point of the MONDRIAN Controller. It binds the routes to the endpoints, which are documented in table \ref{MONDRIAN Controller API}. It then listens and serves on the predefined port.\\
+%    handler & The handler package contains the implementation of the different handlers, which handle the \ac{HTTP} requests coming from a client (Admin, Gateway \ac{TP} or Endpoint \ac{TP}).\\
+%    db & This package is used to set up the database according to the schema shown in listing \ref{MONDRIAN Controller Database}. Furthermore, it provides the implementation of functions that interact with the database. Most queries and statements are quite straight forward. The two queries, which are a bit more complicated are at the same time also the most important ones since they fetch site specific data from the database. The queries for getting the relevant subnets and zone transition policies are shown in listings \ref{Get Subnets Query} and \ref{Get Transitions Query} respectively.\\
+%    types & This package contains the type definitions for zones, sites, subnets and transition policies.\\
+%    api & The \texttt{api} package provides a Go \ac{API} for interacting with the database of the MONDRIAN Controller. This \ac{API} can be used by an administration frontend.\\
+%    \bottomrule
+%    \end{tabular}
+%    \caption{Package Documentation}
+%    \label{Package Documentation}
+%    \end{table*}
+
+%\todo{ \\
+%    - Implemented in Go \\
+%    - Using SQLite \\
+%    - API definition 
+%}
+%\newpage
+\input{sec/SQL_Subnets.tex}
+\input{sec/SQL_Transitions.tex}
+
+% \onecolumn
+\begin{table}[t]
+\begin{tabular}{@{}p{.15\textwidth}p{.67\textwidth}@{}}\toprule
+\textbf{Route} & \textbf{Endpoint} \\\midrule
+\multicolumn{2}{c}{\textit{Used by Endpoint TP and Gateway TP}}\\\midrule
+/api/get-subnets & Returns the subnets which are located at the site specified in the body of the request or the subnets which are reachable from this site according to the policy database.\\
+\bottomrule
+\multicolumn{2}{c}{\textit{Used by Endpoint TP}}\\\midrule
+/api/get-transitions & Returns the policies which are relevant for the hosts of the site specified in the body of the request.\\
+\bottomrule
+\multicolumn{2}{c}{\textit{Used for Testing}}\\\midrule
+/ & This endpoint is just used to test the reachability of the MONDRIAN Controller.\\% It simply answers with \texttt{Hello from the Controller}.\\ 
+\bottomrule
+\multicolumn{2}{c}{\textit{Used by Administrator}}\\\midrule
+/api/get-all-sites & Returns all sites stored in the database of the MONDRIAN Controller.\\
+/api/get-all-zones & Returns all zones stored in the database of the MONDRIAN Controller.\\
+/api/get-all-subnets & Returns all subnets stored in the database of the MONDRIAN Controller.\\
+/api/get-all-transitions & Returns all zone transition policies stored in the database of the MONDRIAN Controller.\\
+/api/insert-sites & Inserts a list of sites into the database.\\
+/api/insert-zones & Inserts a list of zones into the database.\\
+/api/insert-subnets & Inserts a list of subnets into the database.\\
+/api/insert-transitions & Inserts a list of policies into the database.\\
+/api/delete-sites & Delete all sites which are listed in the list of sites in the body of the request.\\
+/api/delete-zones & Delete all zones which are listed in the list of zones in the body of the request.\\
+/api/delete-subnets & Delete all subnets which are listed in the list of subnets in the body of the request.\\
+/api/delete-transitions & Delete all transitions which are listed in the list of transitions in the body of the request.\\
+\bottomrule
+\end{tabular}
+\caption{MONDRIAN Controller API}
+\label{MONDRIAN Controller API}
+\end{table}
+% \twocolumn
+    
+\FloatBarrier
+\subsection{Endpoint TP}
+The Endpoint \acs{TP} is implemented as a RYU application which is based on the RYU \acs{SDN} controller \cite{RYU2021docs}. The RYU controller is based on Python and therefore provides a Python \acs{API} as a northbound interface. As a southbound protocol, the RYU controller uses the well-established OpenFlow protocol and supports its versions 1.0-1.5. Since OpenFlow version 1.3 seems to be the most established one, we choose version 1.3 for the implementation of the Endpoint \acs{TP}. However, it should be easy to upgrade it to version 1.4 or 1.5 since the code is mostly OpenFlow independent. The only hard requirement we have regarding the OpenFlow version is that we need to be able to match all fields that we find in the 5-tuplet of a MONDRIAN policy.
+
+The support for a wide range of OpenFlow versions and the well maintained documentation of the Python \acs{API} together with the circumstance that Python is an ideal language for fast prototyping, led us to the decisions to use the RYU \acs{SDN} controller as a basis for the implementation of the Endpoint \acs{TP}.
+
+The RYU \acs{SDN} controller ships with a so called \texttt{ryu-manager}, which is used to configure and start the \acs{SDN} controller and load and start the individual applications, which are implemented as Python classes, inheriting from the \texttt{app\_manager.RyuApp} class.
+
+There are certain parameters, which have been set to a default in the \acs{PoC} implementation of the Endpoint \acs{TP} but would need to be fine-tuned to the needs of the environment in which the Endpoint \acs{TP} would be running. The fetcher, which fetches data from the MONDRIAN Controller has a \texttt{refresh\_interval} parameter, which is set to 30 seconds by default. Meaning that every 30 seconds it fetches new data from the MONDRIAN Controller. Increasing this interval means that the Endpoint TP is less responsive to policy changes but also has a lower overhead due to the fetching activities. Furthermore, flow table entries in OpenFlow can expire after some time depending on two types of timeouts that one can set. An \texttt{IDLE\_TIMEOUT} means that a flow table entry is removed if it didn't match a flow for the given amount of time. A \texttt{HARD\_TIMEOUT} on the other hand will forcibly cause the removal of a flow table entry that expired due to it, regardless of how often it matched a flow. Both timeouts can be set to infinity by setting their values to zero, which is what we do for table miss entries.
+
+Subsequently, we discuss the role individual Python files of the code base of the Endpoint \acs{TP} play.
+
+\paragraph{main.py} The main file is the starting point of an Endpoint \acs{TP}. It contains the \texttt{EndpointTP} class, which implements the \texttt{RyuApp}. The \texttt{EndpointTP} class contains the two main event handlers that we make use of. The function \texttt{switch\_features\_handler(self, ev)} is invoked whenever a switch gets newly connected to the RYU \acs{SDN} controller. In this function, we create an empty match, which means that it matches against every flow. Then we add a new flow table entry with this empty match, which has priority zero, meaning the lowest possible priority. Both the \texttt{HARD\_TIMEOUT} as well as the \texttt{IDLE\_TIMEOUT} are set to zero, such that the flow will never time out. This flow table entry is called a table miss entry and it takes effect whenever there's no other flow table entry that matched a specific flow. The action associated to this flow table entry is an \texttt{OFPP\_CONTROLLER} action, meaning that the packet will be sent to the \acs{SDN} controller and therefore to the Endpoint \acs{TP} via a packet-in message.
+
+The second event handler is the \texttt{packet\_in\_handler(self, ev)} function. As the name suggests, it handles packet-in messages. It parses the necessary header information from the packet, queries the transfer module and installs a flow table entry either allowing or disallowing the flow based on the decision the transfer module made. Note that non-\acs{IP}v4 traffic will simply be ignored by the Endpoint \acs{TP}, meaning that it's the responsibility of other components to handle that kind of traffic.
+
+\paragraph{start\_custom\_EndpointTP.py} An Endpoint \acs{TP} reads at startup some parameters from a \texttt{config.json} file. The script \texttt{start\_custom\_EndpointTP.py} allows us to update the content of this file by passing command line arguments to the script. It then starts the Endpoint \acs{TP} with the updated \texttt{config.json} file as well as other RYU services. Currently it starts a L2 switch, which is placed after the Endpoint \acs{TP} in the \acs{SFC}. This script is useful for the automated startup of different instances of an Endpoint \acs{TP}.
+
+\paragraph{conn\_state.py} If a policy matches a flow where the action in the policy is \texttt{established}, the Endpoint \acs{TP} needs to keep a state such that it knows that it needs to allow the response traffic once it arrives at the Endpoint \acs{TP}. This state is needed to make sure that no response is allowed for which there wasn't an initiator of the connection. The class \texttt{ConnectionState} is basically a data structure where a connection can be added when initiated and looked up and removed once the responder sends its response. There's a mechanism in place that prevents the state from growing arbitrarily. If it exceeds a maximum number of entries (100 by default) then it simply removes the oldest connection from the state. Note that this is simply a protection mechanism and that the size is expected to be constant since for most initiations there will be a response.
+
+\paragraph{const.py} The \texttt{Const} class is used to store some values that are constant during the execution of an instance of an Endpoint \acs{TP}. At startup, the class method \texttt{init\_const(self)} is invoked, which reads the parameters stored in the \texttt{config.json} file and makes them available to the Endpoint \acs{TP}.
+
+\paragraph{fetcher.py} The \texttt{Fetcher} class stores a list of subnets and a list of zone transition policies. These two lists get regularly refreshed by a daemon thread, which fetches fresh data from the MONDRIAN Controller. The \texttt{refresh\_interval} is by default set to 30 seconds. 
+
+The functions \texttt{get\_subnets()} and \texttt{get\_policies()} can be used to retrieve the current data from the fetcher. 
+
+\paragraph{stats.py} The \texttt{Stats} class is used for the evaluation of the Endpoint \acs{TP}. When initializing a \texttt{Stats} object, the parameter \texttt{delta\_t} is set (by default it's 60 seconds), which is the time interval in which the number of occurrences of an event is recorded. To record an event we can simply invoke the \texttt{tick()} function of the \texttt{Stats} class. Every \texttt{delta\_t} seconds, the number of events recorded in the last interval will be written to a file.
+
+\paragraph{sync.py} Different RYU applications might need some form of communication or synchronization amongst each other. For this purpose, we can set a context dictionary which can be used to create shared objects. The \texttt{Synchronizer} class is the class which will generate the shared object, which we need to ensure that the order of the \acs{SFC} is preserved. The decision of the Endpoint \acs{TP}, whether or not to allow a flow, is recorded in the \texttt{Synchronizer} object. Following RYU applications like the L2 switch can then still learn the mac addresses but before any of the following services decides to send a packet-out message, it needs to check with the \texttt{Synchronizer} to figure out if the traffic is allowed or not.
+
+\paragraph{transfer\_module.py} The \texttt{TransferModule} is responsible for the policy checking. The function \texttt{check\_packet(self, packet)} takes in a packet object, finds the source and destination zone and checks the packet against the policies. If multiple policies match, then the one with the highest priority is chosen. The overall priority is determined by summing up partial priorities of individual fields whenever they are specified, meaning they are not wildcards. The different priorities of the individual fields of the 5-tuplet can be seen in table \ref{Policy Field Priorities}. The idea behind this weighting is that specified zones are always preferred over specified ports or protocol. Since destination ports are often bound to a service, while source ports can normally be chosen arbitrarily, we decided to weight a specified destination port equally with a specified pair of source port and transport layer protocol. If multiple policies with the same priority match, we break ties by simply choosing the policy with the higher policy-ID, since this will most likely be the newest policy.
+
+The \texttt{check\_packet(self, packet)} function classifies a packet into one of six subsequently described categories.
+\subparagraph{\texttt{FORWARDING}} The policy with the highest priority that matched the packet has \textit{"forwarding"} as an action.
+\subparagraph{\texttt{DROP}} The policy with the highest priority that matched the packet has \textit{"drop"} as an action.
+\subparagraph{\texttt{ESTABLISHED}} The policy with the highest priority that matched the packet has \textit{"established"} as an action.    
+\subparagraph{\texttt{ESTABLISHED\_RESPONSE}} The packet could be the response to an established connection. Note that this classification is returned next to one of the other five classifications, which would be determining the action in case of the connection not being in the state and therefore not being established.
+\subparagraph{\texttt{INTRA\_ZONE}} The source and the destination zone are the same. Intra-zone traffic will be allowed and the flow table entry will be more permissive since we don't have to match the ports nor the protocol.
+\subparagraph{\texttt{DEFAULT}} The packet didn't match any policy and therefore a default action will be applied. In our case we simply drop that kind of traffic.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{@{}p{.15\textwidth}p{.1\textwidth}@{}}\toprule
+    \textbf{Policy Field} & \textbf{Priority} \\\midrule
+    Source Zone & +5\\
+    Destination Zone & +5\\
+    Source Port & +1\\
+    Destination Port & +2\\
+    Protocol & +1\\
+    \bottomrule
+\end{tabular}
+    \caption{Policy Field Priorities}
+    \label{Policy Field Priorities}
+\end{table}
+
+
+\paragraph{types.py} This file contains the type definitions for the MONDRIAN specific types like \texttt{Policy}, \texttt{Subnet} and \texttt{Zone} as well as the type definition for the \texttt{Packet} object, which is passed into the \texttt{check\_packet(self, packet)} function of the transition module.
+
+
+%\todo{ \\
+%    - RYU Controller with Python API \\
+%    - Fetcher fetching data from MONDRIAN controller periodically\\
+%    - Transition Module checking packet against policies \\
+%    - Synchronizer = shared state between SDN Apps which is used to ensure that drop decissions are respected also by other handlers \\
+%    - Conn state is used to allow established connections (argue why the state is no problem) \\
+%    - Discuss Idle/Hard timeout
+%}
+% \newpage
+\subsection{Gateway TP}
+The Gateway \acs{TP} is implemented in Go, such that some concepts can be borrowed from the implementation of the \acs{TP} from the original MONDRIAN design. However, the original MONDRIAN implementation was based on top of the \acs{SCION} (\acl{SCION}) \cite{perrig2017scion} internet architecture, where as a Gateway \acs{TP} is implemented to work over an \acs{IP} based network. 
+
+The standard way of manipulating \acs{IP} packets in Go is by using \texttt{gopackets} \cite{google2020gopacket}. For reading traffic from an interface, we use the \texttt{pcap} package, which is part of the \texttt{github.com/google/gopacket} module. 
+
+The Gateway \acs{TP} basically is a forwarder, which reads packets from one interface, transforms them from MONDRIAN packets to \acs{IP} packets or vice versa and then sends the resulting packet out the other interface. This means that the Gateway \acs{TP} simply sits on the wire and performs the transformation but doesn't take responsibility for any other tasks like routing. The transformation to and from MONDRIAN requires a cryptographic operation, which in turn requires a symmetric key. This key is derived according to the \acs{DRKey} derivation scheme. This process requires communication between different Gateway \acsp{TP}. This communication happens via a separate interface and so does the communication with the MONDRIAN Controller. Like this control plane traffic and data plane traffic are completely separated.
+
+Subsequently, we describe the functionality of the different packages of the Gateway \acs{TP}
+
+
+\paragraph{main} The \texttt{main} package is the entry point of the Gateway \acs{TP}. It initializes the \texttt{config} package as well as the \texttt{logger} package. Then it creates a \texttt{forwarder} and starts it. After that it just waits while the \texttt{forwarder} is handling the traffic.
+
+\paragraph{config} The \texttt{config} package contains some constants and also an initializer, which reads some parameters from the \texttt{config.json} file and makes these parameters available to the rest of the Gateway \acs{TP}.
+
+\paragraph{types} This package contains the type definitions of the MONDRIAN types. Namely of \texttt{Site}, \texttt{Zone}, \texttt{Subnet} and \texttt{Transition}. It also contains the implementation of some helper functions, related to the handling of these types.
+
+\paragraph{fetcher} The \texttt{fetcher} package implements a similar functionality as the fetcher of the Endpoint \acs{TP}. It starts a goroutine which regularly fetches data from the MONDRIAN Controller. It then provides the interfaces for other modules to read the zone and site information based a provided \acs{IP} address in a thread safe way.
+
+\paragraph{keyman} The key manager has three main responsibilities. Firstly, it acts as a key server, providing an \acs{API} with which other Gateway \acsp{TP} can fetch the right L1 key. The \acs{API} is described in table \ref{Key Server API}. It also fetches L1 keys from remote \acsp{TP} if needed. Secondly, it internally performs the key derivations according to the \acs{DRKey} derivation scheme and also makes sure that the keys are always fresh. Thirdly, it provides an interface for other modules to get the right L2 key for a given source \acs{TP}, destination \acs{TP} and destination zone.
+
+% \FloatBarrier
+% \onecolumn
+\begin{table}[t]
+\centering
+\begin{tabular}{@{}p{.08\textwidth}p{.38\textwidth}@{}}\toprule
+    \textbf{Route} & \textbf{Endpoint} \\\midrule
+    \multicolumn{2}{c}{\textit{Used for Testing}}\\\midrule
+    / & This endpoint is just used to test the reachability of the Key Server. It simply answers with \texttt{Hello from the Key Server}.\\ 
+    \bottomrule
+    \multicolumn{2}{c}{\textit{Used by Gateway \acsp{TP}}}\\\midrule
+    /api/Get-L1-Key & This endpoint is used to let a remote Gateway \acs{TP} fetch the L1-key from the local key server. If the local key server is $B$ and the request comes from $A$ then $B$ sends to $A$ the following key: $K_{A \to B}$\\ 
+    \bottomrule
+\end{tabular}
+    \caption{Key Server \acs{API}}
+    \label{Key Server API}
+\end{table}
+% \twocolumn
+
+\paragraph{forwarder} The \texttt{forwarder} package starts a \texttt{fetcher} and a \texttt{keyman}. It then creates an interface handle by using \texttt{pcap} for both an internal as well as an external interface. The internal interface faces the data center's network and the external interface is exposed to the internet. The \texttt{forwarder} then reads from both interfaces, transforms the packets from \acs{IP} to MONDRIAN or from MONDRIAN to \acs{IP} and then sends the resulting packet out via the other interface respectively.
+
+\paragraph{mondrian} This package contains the type definition of the MONDRIAN layer, which is used to create and parse gopackets. Since gopackets are designed to be a stack of protocol layers, which are then serialized into a buffer, we simply need to define a new layer if we want to create a new protocol such as MONDRIAN. A MONDRIAN packet is basically a layer stack consisting of an ethernet layer, an \acs{IP} layer and a MONDRIAN layer.
+
+\paragraph{crypto} This package provides some functions for performing cryptographic operations. It uses open-source cryptographic libraries and creates an \acs{AEAD} (\acl{AEAD}) cipher, meaning that encryption and authentication can happen with only one operation. The cipher we use is an \acs{AES} (\acl{AES}) cipher in \acs{GCM} (\acl{GCM}) mode, which has the advantage that we can make use of the hardware accelerated \acs{AES-NI} instruction.
+
+\paragraph{api} This package is the client \acs{API} provided by the MONDRIAN Controller. It is used by the \texttt{fetcher} to fetch data from the MONDRIAN Controller.
+
+\paragraph{logger} The \texttt{logger} package is used to write some log information into a file. However, it should only be used if important and rarely occurring events take place, because writing to a file can severely impact the forwarding performance of the Gateway \acs{TP}.
+
+
+
+%\todo{ \\
+%    - Implemented in Go \\
+%    - Using gopackets/pcap \\
+%    - forwarder reading from interface, transforming, sending on other interface \\
+%    - Keymanager using DRKey to establish shared secrets between sites \\
+%    - fetcher periodically fetching data from MONDRIAN Controller
+%}

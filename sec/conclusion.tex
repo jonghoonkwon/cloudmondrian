@@ -1,0 +1,18 @@
+% \chapter{Conclusion}
+
+This master thesis project has shown that a modern network zoning architecture like MONDRIAN is also realizable in the context of data center networking. The \acs{PoC} \cite{meinen2021DCMONDRIAN} implementation shows satisfying results and has proven the feasibility of the new MONDRIAN design.
+
+The new MONDRIAN design fully incorporates the concept of \acs{NFV} by providing a hybrid solution, consisting of a traditional \acs{VM}/container-based \acs{VNF} as well as a more modern \acs{SDN} based \acs{VNF}. It follows the design principles that can be found in modern data centers and hence integrates seamlessly into the infrastructure found in data centers.
+
+Even though the current implementation is just a proof of concept and therefore doesn't provide production level performance, the \acs{PoC} implementation proves that there are no conceptual reasons why a highly performant production level implementation could be impossible. All the performance bottlenecks have been identified by rigorously analyzing the \acs{PoC} implementation and can be eliminated by using production level frameworks like \acs{DPDK}.
+
+For data center operators, there exist clear benefits for using a logically centralized inter-domain network zoning architecture like MONDRIAN, mainly because data centers can be enormous in size and due to their multi-tenancy nature, they have very strict network zoning requirements. It is therefore a welcome finding that data center operators can make use of MONDRIAN as well.
+
+The major contributions of this thesis are the introduction of the concept of \aclp{vTP} and the separation of responsibilities of a \acs{TP}, which leads to the introduction of the Gateway \acs{TP} as well as the Endpoint \acs{TP}. Furthermore, the \acs{SDN} based design of the Endpoint \acs{TP} is what distinguishes the new MONDRIAN design the most from the original one and is the major reason why MONDRIAN can now be used in data centers.
+
+%\todo{\\
+%    - It works\\
+%    - It can be implemented in a performant way (just not with gopackets but DPDK instead)\\
+%    - Clear benefits exist for DC Operators\\
+%    - Major contribution of this Thesis: SDN approach for Endpoint TPs, concept of vTP = Gateway TP + Endpoint TP
+%}

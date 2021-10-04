@@ -1,0 +1,21 @@
+% \chapter{Related Work}
+
+The most important paper related to this thesis is of course the original MONDRIAN paper, proposing the original design of MONDRIAN \cite{kwonmondrian}. It introduced many concepts, which have been reused in this thesis, such as the concept of a MONDRIAN Controller working together with different \acsp{TP}, which are located at different sites. It further specifies the functionality of the Authentication Module, as well as the Transition Module. Using the \acs{DRKey} derivation scheme for establishing shared secrets between \acsp{TP} is an idea, which has been borrowed from the aforementioned paper. 
+
+What modern data centers look like and what concepts exist in the field of \acs{SDDC} (\acl{SDDC}) is discussed in a whitepaper about VMware\texttrademark's NSX data center platform \cite{vmware2021nsx}. The concept of virtual distributed switches, like they can be found in VMware's products, served as an inspiration for the distributed nature of the Endpoint \acs{TP}. Current research questions concerning cloud data centers and where in data centers high costs occur and what the challenges are to minimize them is discussed in the paper \textit{"The Cost of a Cloud: Research Problems in Data Center Networks"} \cite{greenberg2008cost}. This paper also highlights the importance of saving bandwidth, both in the inter-domain as well as in the intra-domain case. The Endpoint \acs{TP} addresses this problem by providing a more advanced egress-filtering mechanism than the original \acs{TP}.
+
+Regarding \acs{SDN}, there is a paper written by Intel\texttrademark,  discussing how a \acs{DPDK} enabled \acs{OVS} can enable \acs{SDN} and \acs{NFV} transformation \cite{intel2015OVS}. It shows the performance gains \acs{OVS} achieves thanks to the use of \acs{DPDK} and how the \acs{OVS} integrates seamlessly into the \acs{NFV} reference architecture, proposed by the \acs{ETSI}. A great overview over the numerous northbound interfaces that exist for \acs{SDN} is provided by a paper called \textit{"The Northbound APIs of Software Defined Networks"} \cite{tijare2016northbound}. It shows the important differences between \acs{REST}full and non-\acs{REST}full interfaces of \acs{SDN} controllers and was helpful for deciding which \acs{SDN} controller suites our needs best. Numerous other \acs{SDN} related concepts are described in a book called \textit{"Software Defined Networks"} by Paul Goransson and Chuck Black \cite{goransson2014SDN}. It contains an OpenFlow specification, discusses how \acs{SDN} is used in data centers and other environments and shows example applications based on \acs{SDN}.
+
+In the field of \acs{NFV} there exists a paper highlighting the benefits, enablers and challenges for \acs{NFV} \cite{att2012NFV}. This paper is a collaborative work of many major \acs{Telco} companies and has been presented at the \textit{\acs{SDN} and OpenFlow World Congress}. It provides us with a holistic view over the general state of \acs{NFV} and shows in which direction the entire industry is evolving according to major \acs{Telco} companies.
+
+
+
+%\todo{ \\
+%	- original mondrian paper \cite{kwonmondrian}\\
+%	- what DCs look like \cite{vmware2021nsx}\\
+%	- what is important in DCs \cite{greenberg2008cost}\\
+%	- OVS for SDN based NFV with DPDK \cite{intel2015OVS}\\
+%	- Northbound APIs \cite{tijare2016northbound}\\
+%	- Basics about SDN \cite{goransson2014SDN}\\
+%	- NFV \cite{att2012NFV}
+%}
